@@ -100,10 +100,16 @@
     const player = $('.player')
     const playBtn = $('.btn-toggle-play')
     const progress = $('#progress')
+    const nextBtn = $('.btn-next')
+    const prevBtn = $('.btn-prev')
+    const randomBtn = $('.btn-random')
+    const repeatBtn = $('.btn-repeat')
 
     const app = {
       currentIndex: 0,
       isPlaying: false,
+      isRandom: false,
+      isRepeat: false,
       songs: [
         {
           name: 'So em biet minh con yeu',
@@ -168,9 +174,9 @@
       ],
 
       render: function() {
-        const htmls = this.songs.map(song => {
+        const htmls = this.songs.map((song, index) => {
           return `
-          <div class="song">
+          <div class="song ${index === this.currentIndex ? 'active' : ''} ">
             <div class="thumb" style="background-image: url('${song.image}')">
             </div>
             <div class="body">
@@ -218,11 +224,13 @@
         audio.onplay = function() {
           _this.isPlaying = true
           player.classList.add('playing')
+          cdThumbAnim.play()
         }
         // Khi song bị pause
         audio.onpause = function () {
           _this.isPlaying = false
           player.classList.remove('playing')
+          cdThumbAnim.pause()
         }
 
         // Khi tiến độ bài hát thay đổi
@@ -230,6 +238,64 @@
           if (audio.duration) {
             const progressPercent = audio.currentTime / audio.duration * 100
             progress.value = progressPercent
+          }
+        }
+
+        // Xử lý khi tua 
+        progress.onchange = function(e) {
+          const seekTime = audio.duration/100 * e.target.value
+          audio.currentTime = seekTime
+        }
+
+        // Xử lý cd quay/dừng
+        const cdThumbAnim = cdThumb.animate([
+          { transform: 'rotate(360deg)' }
+        ], {
+          duration: 10000, //10s
+          iterations: Infinity
+        })
+        cdThumbAnim.pause()
+
+        // Xử lý khi next song
+        nextBtn.onclick = function () {
+          if (_this.isRandom) {
+            _this.playRandomSong()
+          } else {
+            _this.nextSong()
+          }
+          audio.play()
+          _this.render()
+        }
+
+        // Xử lý khi pre song
+        prevBtn.onclick = function () {
+          if (_this.isRandom) {
+            _this.playRandomSong()
+          } else {
+            _this.preSong()
+          }
+          audio.play()
+          _this.render()
+        }
+
+        // Xử lý khi random on/off
+        randomBtn.onclick = function () {
+          _this.isRandom = !_this.isRandom
+          randomBtn.classList.toggle('active', _this.isRandom)
+        }
+
+        // Xử lý repeat on/off
+        repeatBtn.onclick = function () {
+          _this.isRepeat = !_this.isRepeat
+          repeatBtn.classList.toggle('active', _this.isRepeat)
+        }
+
+        //Xử lý next song khi audio ended
+        audio.onended = function () {
+          if (_this.isRepeat) {
+            audio.play()
+          } else {
+            nextBtn.click()
           }
         }
       },
@@ -243,9 +309,37 @@
         console.log(heading, cdThumb, audio);
       },
 
+      nextSong: function(){
+        this.currentIndex++
+        if (this.currentIndex >= this.songs.length ) {
+          this.currentIndex = 0
+        }
+        this.loadCurrentSong()
+      },
+
+      preSong: function(){
+        this.currentIndex--
+        if (this.currentIndex < 0 ) {
+          this.currentIndex = this.songs.length-1
+        }
+        this.loadCurrentSong()
+      },
+
+      playRandomSong: function(){
+        let newIndex
+        do {
+          newIndex = Math.floor(Math.random() * this.songs.length)
+          console.log(newIndex);
+        } while (newIndex === this.currentIndex)
+
+        this.currentIndex = newIndex
+        this.loadCurrentSong()
+      },
+
       start: function(){
         // Định nghĩa các thuộc tính cho object
         this.defineProperties();
+
         // Lắng nghe và xử lý event
         this.handleEvents();
 
