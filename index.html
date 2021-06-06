@@ -93,6 +93,8 @@
     const $ = document.querySelector.bind(document);
     const $$ = document.querySelectorAll.bind(document);
 
+    const PLAYER_STORAGE_KEY = 'F8_PLAYER'
+
     const heading = $('header h2')
     const cdThumb = $('.cd-thumb')
     const audio = $('#audio')
@@ -104,15 +106,23 @@
     const prevBtn = $('.btn-prev')
     const randomBtn = $('.btn-random')
     const repeatBtn = $('.btn-repeat')
+    const playlist = $('.playlist')
 
     const app = {
       currentIndex: 0,
       isPlaying: false,
       isRandom: false,
       isRepeat: false,
+
+      config: JSON.parse(localStorage.getItem(PLAYER_STORAGE_KEY)) || {},
+      setConfig: function(key, value){
+        this.config[key] = value
+        localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify(this.config))
+      },
+
       songs: [
         {
-          name: 'So em biet minh con yeu',
+          name: 'Sợ em biết mình còn yêu',
           singer: 'Jun D.Dung',
           path: './assets/music/song1.mp3',
           image: './assets/img/song1.jpg'
@@ -121,10 +131,16 @@
           name: 'Simple love',
           singer: 'Obito',
           path: './assets/music/song2.mp3',
-          image: './assets/img/song1.jpg'
+          image: './assets/img/song2.jpg'
         },
         {
-          name: 'So em biet minh con yeu',
+          name: 'Chẳng thể tìm được em',
+          singer: 'PhucXP',
+          path: './assets/music/song3.mp3',
+          image: './assets/img/song3.jpg'
+        },
+        {
+          name: 'Sợ em biết mình còn yêu',
           singer: 'Jun D.Dung',
           path: './assets/music/song1.mp3',
           image: './assets/img/song1.jpg'
@@ -133,10 +149,16 @@
           name: 'Simple love',
           singer: 'Obito',
           path: './assets/music/song2.mp3',
-          image: './assets/img/song1.jpg'
+          image: './assets/img/song2.jpg'
         },
         {
-          name: 'So em biet minh con yeu',
+          name: 'Chẳng thể tìm được em',
+          singer: 'PhucXP',
+          path: './assets/music/song3.mp3',
+          image: './assets/img/song3.jpg'
+        },
+        {
+          name: 'Sợ em biết mình còn yêu',
           singer: 'Jun D.Dung',
           path: './assets/music/song1.mp3',
           image: './assets/img/song1.jpg'
@@ -145,38 +167,26 @@
           name: 'Simple love',
           singer: 'Obito',
           path: './assets/music/song2.mp3',
-          image: './assets/img/song1.jpg'
+          image: './assets/img/song2.jpg'
         },
         {
-          name: 'So em biet minh con yeu',
-          singer: 'Jun D.Dung',
-          path: './assets/music/song1.mp3',
-          image: './assets/img/song1.jpg'
-        },
-        {
-          name: 'Simple love',
-          singer: 'Obito',
-          path: './assets/music/song2.mp3',
-          image: './assets/img/song1.jpg'
-        },
-        {
-          name: 'So em biet minh con yeu',
-          singer: 'Jun D.Dung',
-          path: './assets/music/song1.mp3',
-          image: './assets/img/song1.jpg'
+          name: 'Chẳng thể tìm được em',
+          singer: 'PhucXP',
+          path: './assets/music/song3.mp3',
+          image: './assets/img/song3.jpg'
         },
         {
           name: 'Simple love',
           singer: 'Obito',
           path: './assets/music/song2.mp3',
-          image: './assets/img/song1.jpg'
+          image: './assets/img/song2.jpg'
         }
       ],
 
       render: function() {
         const htmls = this.songs.map((song, index) => {
           return `
-          <div class="song ${index === this.currentIndex ? 'active' : ''} ">
+          <div class="song ${index === this.currentIndex ? 'active' : ''} " data-index=${index} >
             <div class="thumb" style="background-image: url('${song.image}')">
             </div>
             <div class="body">
@@ -189,7 +199,7 @@
           </div>
           `
         })
-        $('.playlist').innerHTML = htmls.join('');
+        playlist.innerHTML = htmls.join('');
       },
 
       defineProperties: function() {
@@ -265,6 +275,7 @@
           }
           audio.play()
           _this.render()
+          _this.scrollToActiveSong()
         }
 
         // Xử lý khi pre song
@@ -281,12 +292,14 @@
         // Xử lý khi random on/off
         randomBtn.onclick = function () {
           _this.isRandom = !_this.isRandom
+          _this.setConfig('isRandom', _this.isRandom)
           randomBtn.classList.toggle('active', _this.isRandom)
         }
 
         // Xử lý repeat on/off
         repeatBtn.onclick = function () {
           _this.isRepeat = !_this.isRepeat
+          _this.setConfig('isRepeat', _this.isRepeat)
           repeatBtn.classList.toggle('active', _this.isRepeat)
         }
 
@@ -298,6 +311,41 @@
             nextBtn.click()
           }
         }
+
+        // Xử lý khi click song in playlist
+        playlist.onclick = function (e) {
+          const songNode = e.target.closest('.song:not(.active)')
+          // Xu li khi click vao song
+          if( songNode || e.target.closest('.option')){
+            if(songNode) {
+              console.log(songNode.dataset.index);    // HTML global data
+              _this.currentIndex = Number(songNode.dataset.index)
+              _this.loadCurrentSong()
+              _this.render()
+              audio.play()
+            }
+
+            // Xu ly khi click vao song option
+            if( e.target.closest('.option') ) {
+
+            }
+          }
+        }
+      },
+
+      loadConfig: function(){
+        this.isRandom = this.config.isRandom
+        this.isRepeat = this.config.isRepeat
+      },
+
+      scrollToActiveSong: function(){
+        setTimeout(() => {
+        $('.song.active').scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest'
+        })
+          
+        }, 300);
       },
 
       loadCurrentSong: function(){
@@ -337,6 +385,9 @@
       },
 
       start: function(){
+        // Load config vao app 
+        this.loadConfig()
+
         // Định nghĩa các thuộc tính cho object
         this.defineProperties();
 
@@ -348,6 +399,9 @@
 
         // Render app
         this.render();
+
+        randomBtn.classList.toggle('active', this.isRandom)
+        repeatBtn.classList.toggle('active', this.isRepeat)
       }
     }
 
